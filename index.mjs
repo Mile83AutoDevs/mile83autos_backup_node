@@ -1,52 +1,59 @@
-import express from "express";
-import bodyParser from "body-parser";
-import nodeCron from "node-cron";
+import dotenv from "dotenv"; // <--- import dotenv
+import { Client, GatewayIntentBits } from "discord.js";
 import { backupModule, callDatabaseData } from "./backup_node.mjs";
 
-// ---------------- SETUP ----------------
-const server = express();
-server.use(bodyParser.json());
-server.use(bodyParser.urlencoded({ extended: true }));
-server.use(express.json());
+// ---------------- LOAD ENV ----------------
+dotenv.config(); // <--- load variables from .env
 
-// Run daily at 24 hours once a day;
-const timeofNextBackup = "0 0 * * *";
+// ---------------- DISCORD BOT SETUP ----------------
+const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
 
-// ---------------- CRON JOB ----------------
-const startBackupCronJob = () => {
-  console.log("Starting 24 hours backup cron job...");
-  nodeCron.schedule(timeofNextBackup, async () => {
-    try {
-      console.log("Running 24 hours backup...");
-      const databaseData = await callDatabaseData("production");
-      if (!databaseData) {
-        console.log("Could not fetch database data for backup.");
-        return;
-      }
-      const isBackupSuccess = await backupModule(
-        databaseData,
-        "production"
-      );
-      console.log(
-        isBackupSuccess
-          ? "24 hours backup completed successfully."
-          : "24 hours backup failed."
-      );
-    } catch (error) {
-      console.error("Cron execution error:", error.message);
-    }
-  });
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+});
+
+const sendDiscordMessage = async (message) => {
+  try {
+    const channel = await client.channels.fetch(DISCORD_CHANNEL_ID);
+    if (channel) await channel.send(message);
+  } catch (err) {
+    console.error("Failed to send Discord message:", err.message);
+  }
 };
 
-// ---------------- INITIALIZE ----------------
-(() => {
-  startBackupCronJob();
-})();
+// ---------------- BACKUP WORKER ----------------
+const runBackup = async () => {
+  console.log("Starting daily backup...");
 
-// ---------------- KEEP PROCESS ALIVE ----------------
-const PORT = process.env.PORT || 3000;
+  try {
+    const databaseData = await callDatabaseData("production");
+    if (!databaseData) {
+      const msg = "⚠️ Backup failed: Could not fetch database data.";
+      console.log(msg);
+      await sendDiscordMessage(msg);
+      return;
+    }
 
+    const isBackupSuccess = await backupModule(databaseData, "production");
 
-server.listen(PORT, () => {
-  console.log(`Background cron server is currently running on port ${PORT}`);
+    const msg = isBackupSuccess
+      ? "✅ Daily backup completed successfully."
+      : "❌ Daily backup failed.";
+
+    console.log(msg);
+    await sendDiscordMessage(msg);
+  } catch (error) {
+    const msg = `❌ Backup execution error: ${error.message}`;
+    console.error(msg);
+    await sendDiscordMessage(msg);
+  }
+};
+
+// ---------------- RUN ----------------
+client.once("ready", () => {
+  console.log(`Logged in as ${client.user.tag}`);
+  runBackup().then(() => process.exit(0)); // exit after run
 });
+
+client.login(DISCORD_BOT_TOKEN);
