@@ -1,13 +1,10 @@
-import fs from "fs";
 import dotenv from "dotenv";
 import { Client, GatewayIntentBits } from "discord.js";
 import { backupModule, callDatabaseData } from "./backup_node.mjs";
 
-// ---------------- LOAD ENV ----------------
-// Only load dotenv if a .env file exists (for local testing)
-if (fs.existsSync(".env")) {
-  dotenv.config();
-}
+dotenv.config({
+  quiet: false,
+});
 
 // ---------------- DISCORD BOT SETUP ----------------
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -40,7 +37,7 @@ const runBackup = async () => {
     const databaseData = await callDatabaseData("production");
 
     if (!databaseData) {
-      const msg = "⚠️ Backup failed: Could not fetch database data.";
+      const msg = " Backup failed: Could not fetch database data.";
       console.log(msg);
       await sendDiscordMessage(msg);
       return;

@@ -20,6 +20,6 @@ jobs:
 
       - name: Run backup worker
         env:
-          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
+          DISCORD_BOT_TOKEN: "MTQ4MDUzMjE1OTU1ODE5MzIxNA.Gx6XzE.ZzaCcjIm7s9a_SrFVdbxDIb_ISrrs1QT39hkQg"
+          DISCORD_CHANNEL_ID: "1480532022928871610"
         run: node index.mjs
