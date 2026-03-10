@@ -46,8 +46,8 @@ const runBackup = async () => {
     const isBackupSuccess = await backupModule(databaseData, "production");
 
     const msg = isBackupSuccess.status
-      ? `✅ Daily backup completed successfully., Here is your report: ${isBackupSuccess.data_report}`
-      : "❌ Daily backup failed.";
+      ? `DATA BACKUP SERVER :: ✅ Daily backup completed successfully., Here is your report: ${isBackupSuccess.data_report}`
+      : "DATA BACKUP SERVER :: ❌ Daily backup failed.";
     console.log(msg);
     await sendDiscordMessage(msg);
   } catch (error) {
